@@ -24,16 +24,19 @@ COMPLETION_WAITING_DOTS="true"
 
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git rvm git-flow)
+plugins=(git git-flow osx)
 
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && . "$HOME/.rvm/scripts/rvm" 
+[[ -s "$HOME/.rvm/scripts/rvm" ]] && \. "$HOME/.rvm/scripts/rvm" 
 
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
-export PATH=/Users/cwoodcox/.rvm/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/X11/bin
+export PATH=/Users/cwoodcox/.rvm/bin:/usr/local/sbin:/usr/local/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin
 
-export EDITOR="subl"
-export GIT_EDITOR="subl -wl1"
+export EDITOR="vim"
+export GIT_EDITOR="vim +1"
 
-function git(){hub "$@"}
+alias git=hub
+
+rvm system
+
