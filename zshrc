@@ -35,8 +35,9 @@ export PATH=/Users/cwoodcox/.rvm/bin:/usr/local/sbin:/usr/local/bin:/usr/local/s
 
 export EDITOR="vim"
 export GIT_EDITOR="vim +1"
+set -o vi
 
 alias git=hub
 
-rvm system
+# rvm system
 
