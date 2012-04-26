@@ -13,3 +13,6 @@
 [submodule "vim/bundle/tpope-vim-surround"]
 	path = vim/bundle/tpope-vim-surround
 	url = git://github.com/tpope/vim-surround.git
+[submodule "vim/bundle/tpope-vim-commentary"]
+	path = vim/bundle/tpope-vim-commentary
+	url = git://github.com/tpope/vim-commentary.git
