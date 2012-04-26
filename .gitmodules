@@ -1,3 +1,6 @@
 [submodule "oh-my-zsh"]
 	path = oh-my-zsh
 	url = git://github.com/cwoodcox/oh-my-zsh.git
+[submodule "vim/bundle/msanders-snipmate.vim"]
+	path = vim/bundle/msanders-snipmate.vim
+	url = git://github.com/msanders/snipmate.vim.git
