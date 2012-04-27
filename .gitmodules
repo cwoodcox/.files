@@ -19,3 +19,9 @@
 [submodule "vim/bundle/kchmck-vim-coffee-script"]
 	path = vim/bundle/kchmck-vim-coffee-script
 	url = git://github.com/kchmck/vim-coffee-script.git
+[submodule "vim/bundle/groenewege-vim-less"]
+	path = vim/bundle/groenewege-vim-less
+	url = https://github.com/groenewege/vim-less.git
+[submodule "vim/bundle/scrooloose-syntastic"]
+	path = vim/bundle/scrooloose-syntastic
+	url = git://github.com/scrooloose/syntastic.git
