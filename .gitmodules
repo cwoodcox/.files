@@ -25,3 +25,6 @@
 [submodule "vim/bundle/scrooloose-syntastic"]
 	path = vim/bundle/scrooloose-syntastic
 	url = git://github.com/scrooloose/syntastic.git
+[submodule "vim/bundle/kien-ctrlp-vim"]
+	path = vim/bundle/kien-ctrlp-vim
+	url = https://github.com/kien/ctrlp.vim.git
