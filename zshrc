@@ -29,7 +29,7 @@ COMPLETION_WAITING_DOTS="true"
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
-export PATH=/Users/cwoodcox/.rvm/bin:/usr/local/sbin:/usr/local/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin
+export PATH=/usr/local/sbin:/usr/local/bin:$(brew --prefix ruby)/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin
 
 export EDITOR="vim"
 export GIT_EDITOR="vim +1"
@@ -37,3 +37,4 @@ set -o vi
 
 eval "$(hub alias -s)"
 
+alias stats="history | awk '{a[\$2]++} END {for(i in a){print a[i] \" \" i}}' | sort -nr | head"
