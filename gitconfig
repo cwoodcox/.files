@@ -1,9 +1,6 @@
 [user]
 	name = Corey Woodcox
 	email = corey.woodcox@gmail.com
-[github]
-	user = cwoodcox
-	token = 9be624b4d5206a178fc56921d5bf2c2a
 [core]
 	excludesfile = /Users/cwoodcox/.gitignore_global
 [difftool "sourcetree"]
@@ -16,3 +13,5 @@
 	diff = auto
 	status = auto
 	branch = auto
+[rebase]
+	autosquash = true
