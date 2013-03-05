@@ -38,3 +38,4 @@ set -o vi
 eval "$(hub alias -s)"
 
 alias stats="history | awk '{a[\$2]++} END {for(i in a){print a[i] \" \" i}}' | sort -nr | head"
+alias reload-shell="source ~/.zshrc"
