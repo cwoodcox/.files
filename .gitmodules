@@ -28,3 +28,6 @@
 [submodule "vim/bundle/kien-ctrlp-vim"]
 	path = vim/bundle/kien-ctrlp-vim
 	url = https://github.com/kien/ctrlp.vim.git
+[submodule "vim/bundle/airblade-vim-gitgutter"]
+	path = vim/bundle/airblade-vim-gitgutter
+	url = https://github.com/airblade/vim-gitgutter
