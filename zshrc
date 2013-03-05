@@ -29,7 +29,7 @@ COMPLETION_WAITING_DOTS="true"
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
-export PATH=/usr/local/sbin:/usr/local/bin:$(brew --prefix ruby)/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin
+export PATH=/usr/local/sbin:/usr/local/bin:$(brew --prefix ruby193)/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin
 
 export EDITOR="vim"
 export GIT_EDITOR="vim +1"
