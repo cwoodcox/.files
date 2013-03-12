@@ -15,3 +15,5 @@
 	branch = auto
 [rebase]
 	autosquash = true
+[push]
+	default = current
