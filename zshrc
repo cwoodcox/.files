@@ -30,7 +30,13 @@ source $ZSH/oh-my-zsh.sh
 source $HOME/.files/powerline/powerline/bindings/zsh/powerline.zsh
 
 # Customize to your needs...
-export PATH="/usr/local/sbin:/usr/local/bin:$(brew --prefix ruby`/usr/local/bin/ruby -e 'v = RUBY_VERSION.gsub(".", ""); puts v if v.to_i < 200'`)/bin:/usr/local/share/npm/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin"
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/local/share/npm/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin"
+
+source /usr/local/opt/chruby/share/chruby/chruby.sh
+RUBIES=( `brew --prefix ruby`
+         `brew --prefix ruby193`
+         `brew --prefix rubinius`
+)
 
 export EDITOR="vim"
 export GIT_EDITOR="vim +1"
