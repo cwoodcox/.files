@@ -34,3 +34,6 @@
 [submodule "vim/bundle/slim-template-vim-slim"]
 	path = vim/bundle/slim-template-vim-slim
 	url = https://github.com/slim-template/vim-slim.git
+[submodule "powerline"]
+	path = powerline
+	url = https://github.com/Lokaltog/powerline.git
