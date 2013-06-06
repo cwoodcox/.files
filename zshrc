@@ -27,7 +27,7 @@ COMPLETION_WAITING_DOTS="true"
 # plugins=(autojump brew bundler cloudapp git github gem rails3 rake rvm ssh-agent terminalapp thor osx)
 
 source $ZSH/oh-my-zsh.sh
-. $HOME/.files/powerline/powerline/bindings/zsh/powerline.zsh
+source $HOME/.files/powerline/powerline/bindings/zsh/powerline.zsh
 
 # Customize to your needs...
 export PATH="/usr/local/sbin:/usr/local/bin:$(brew --prefix ruby`/usr/local/bin/ruby -e 'v = RUBY_VERSION.gsub(".", ""); puts v if v.to_i < 200'`)/bin:/usr/local/share/npm/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin"
