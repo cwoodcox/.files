@@ -30,7 +30,7 @@ source $ZSH/oh-my-zsh.sh
 . $HOME/.files/powerline/powerline/bindings/zsh/powerline.zsh
 
 # Customize to your needs...
-export PATH=/usr/local/sbin:/usr/local/bin:$(brew --prefix ruby193)/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin
+export PATH="/usr/local/sbin:/usr/local/bin:$(brew --prefix ruby`/usr/local/bin/ruby -e 'v = RUBY_VERSION.gsub(".", ""); puts v if v.to_i < 200'`)/bin:/usr/local/share/npm/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin"
 
 export EDITOR="vim"
 export GIT_EDITOR="vim +1"
@@ -40,3 +40,7 @@ eval "$(hub alias -s)"
 
 alias stats="history | awk '{a[\$2]++} END {for(i in a){print a[i] \" \" i}}' | sort -nr | head"
 alias reload-shell="source ~/.zshrc"
+
+export ZSH_LOADED=true
+
+export SSL_CERT_FILE=/usr/local/opt/curl-ca-bundle/share/ca-bundle.crt
