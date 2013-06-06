@@ -5,7 +5,7 @@ ZSH=$HOME/.oh-my-zsh
 # Look in ~/.oh-my-zsh/themes/
 # Optionally, if you set this to "random", it'll load a random theme each
 # time that oh-my-zsh is loaded.
-ZSH_THEME="half-life"
+# ZSH_THEME="half-life"
 
 # Set to this to use case-sensitive completion
 # CASE_SENSITIVE="true"
@@ -27,6 +27,7 @@ COMPLETION_WAITING_DOTS="true"
 # plugins=(autojump brew bundler cloudapp git github gem rails3 rake rvm ssh-agent terminalapp thor osx)
 
 source $ZSH/oh-my-zsh.sh
+. $HOME/.files/powerline/powerline/bindings/zsh/powerline.zsh
 
 # Customize to your needs...
 export PATH=/usr/local/sbin:/usr/local/bin:$(brew --prefix ruby193)/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin
