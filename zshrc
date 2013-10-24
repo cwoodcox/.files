@@ -29,10 +29,8 @@ COMPLETION_WAITING_DOTS="true"
 source $ZSH/oh-my-zsh.sh
 source $HOME/.files/powerline/powerline/bindings/zsh/powerline.zsh
 
-# Customize to your needs...
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/local/share/npm/bin:/usr/local/share/python:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11/bin"
+source /opt/boxen/env.sh
 
-source /usr/local/opt/chruby/share/chruby/chruby.sh
 RUBIES=( `brew --prefix ruby`
          `brew --prefix ruby193`
          `brew --prefix rubinius`
@@ -40,6 +38,7 @@ RUBIES=( `brew --prefix ruby`
 
 export EDITOR="vim"
 export GIT_EDITOR="vim +1"
+export GREP_COLOR="01;30"
 set -o vi
 
 eval "$(hub alias -s)"
@@ -49,4 +48,4 @@ alias reload-shell="source ~/.zshrc"
 
 export ZSH_LOADED=true
 
-export SSL_CERT_FILE=/usr/local/opt/curl-ca-bundle/share/ca-bundle.crt
+export SSL_CERT_FILE=$BOXEN_HOME/homebrew/opt/curl-ca-bundle/share/ca-bundle.crt
