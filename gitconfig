@@ -2,7 +2,7 @@
 	name = Corey Woodcox
 	email = corey.woodcox@gmail.com
 [core]
-	excludesfile = /Users/cwoodcox/.gitignore_global
+	excludesfile = /opt/boxen/config/git/gitignore
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path = 
@@ -17,3 +17,10 @@
 	autosquash = true
 [push]
 	default = current
+
+[hub]
+protocol = https
+
+
+[credential]
+helper = /opt/boxen/bin/boxen-git-credential
