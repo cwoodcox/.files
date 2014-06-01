@@ -1,39 +1,3 @@
 [submodule "oh-my-zsh"]
 	path = oh-my-zsh
 	url = git://github.com/cwoodcox/oh-my-zsh.git
-[submodule "vim/bundle/msanders-snipmate.vim"]
-	path = vim/bundle/msanders-snipmate.vim
-	url = git://github.com/msanders/snipmate.vim.git
-[submodule "vim/bundle/tpope-vim-rails"]
-	path = vim/bundle/tpope-vim-rails
-	url = git://github.com/tpope/vim-rails.git
-[submodule "vim/bundle/tpope-vim-ragtag"]
-	path = vim/bundle/tpope-vim-ragtag
-	url = git://github.com/tpope/vim-ragtag.git
-[submodule "vim/bundle/tpope-vim-surround"]
-	path = vim/bundle/tpope-vim-surround
-	url = git://github.com/tpope/vim-surround.git
-[submodule "vim/bundle/tpope-vim-commentary"]
-	path = vim/bundle/tpope-vim-commentary
-	url = git://github.com/tpope/vim-commentary.git
-[submodule "vim/bundle/kchmck-vim-coffee-script"]
-	path = vim/bundle/kchmck-vim-coffee-script
-	url = git://github.com/kchmck/vim-coffee-script.git
-[submodule "vim/bundle/groenewege-vim-less"]
-	path = vim/bundle/groenewege-vim-less
-	url = https://github.com/groenewege/vim-less.git
-[submodule "vim/bundle/scrooloose-syntastic"]
-	path = vim/bundle/scrooloose-syntastic
-	url = git://github.com/scrooloose/syntastic.git
-[submodule "vim/bundle/kien-ctrlp-vim"]
-	path = vim/bundle/kien-ctrlp-vim
-	url = https://github.com/kien/ctrlp.vim.git
-[submodule "vim/bundle/airblade-vim-gitgutter"]
-	path = vim/bundle/airblade-vim-gitgutter
-	url = https://github.com/airblade/vim-gitgutter
-[submodule "vim/bundle/slim-template-vim-slim"]
-	path = vim/bundle/slim-template-vim-slim
-	url = https://github.com/slim-template/vim-slim.git
-[submodule "powerline"]
-	path = powerline
-	url = https://github.com/Lokaltog/powerline.git
