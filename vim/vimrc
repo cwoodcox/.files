@@ -6,15 +6,22 @@ filetype off                      " Turn off file type detection.
 
 set rtp+=~/.vim/bundle/vundle
 call vundle#rc()
+
 Bundle 'gmarik/vundle'
 
 Bundle 'airblade/vim-rooter'
 
+Bundle 'godlygeek/tabular'
+
 Bundle 'groenewege/vim-less'
 
 Bundle 'kchmck/vim-coffee-script'
+Bundle 'slim-template/vim-slim.git'
 
 Bundle 'kien/ctrlp.vim'
+Bundle 'bling/vim-airline'
+Bundle 'edkolev/tmuxline.vim'
+Bundle 'edkolev/promptline.vim'
 
 Bundle 'tpope/vim-commentary'
 Bundle 'tpope/vim-endwise'
@@ -25,6 +32,8 @@ Bundle 'tpope/vim-surround'
 Bundle 'tpope/vim-unimpaired'
 
 syntax enable                     " Turn on syntax highlighting.
+
+filetype plugin indent on         " Turn file type detection back on once Vundle is set up.
 
 runtime macros/matchit.vim        " Load the matchit plugin.
 
@@ -64,9 +73,10 @@ set shiftwidth=2                 " And again, related.
 set expandtab                    " Use spaces instead of tabs
 
 set laststatus=2                  " Show the status line all the time
-" Useful status information at bottom of screen
-set statusline=[%n]\ %<%.99f\ %h%w%m%r%y\ %{fugitive#statusline()}%{exists('*CapsLockStatusline')?CapsLockStatusline():''}%=%-16(\ %l,%c-%v\ %)%P
-set rtp+=~/.files/powerline/powerline/bindings/vim
+let g:airline_powerline_fonts = 1
+let g:airline#extensions#tabline#enabled = 1
+let g:airline_theme = 'bubblegum'
+let g:airline#extensions#tmuxline#enabled = 0
 
 set shellcmdflag=-lc
 
@@ -106,3 +116,22 @@ autocmd BufNewFile,BufRead *_spec.rb compiler rspec
 au BufRead,BufNewFile *.md set filetype=markdown
 au BufRead,BufNewFile *.md setlocal spell
 au BufRead,BufNewFile *.md setlocal textwidth=80
+
+" Run a given vim command on the results of fuzzy selecting from a given shell
+" command. See usage below.
+function! SelectaCommand(choice_command, selecta_args, vim_command)
+  try
+    silent let selection = system(a:choice_command . " | selecta " . a:selecta_args)
+  catch /Vim:Interrupt/
+    " Swallow the ^C so that the redraw below happens; otherwise there will be
+    " leftovers from selecta on the screen
+    redraw!
+    return
+  endtry
+  redraw!
+  exec a:vim_command . " " . selection
+endfunction
+
+" Find all files in all non-dot directories starting in the working directory.
+" Fuzzy select one of those. Open the selected file with :e.
+" nnoremap <C-p> :call SelectaCommand("find * -type f", "", ":e")<cr>
