@@ -26,6 +26,9 @@ protocol = https
   recommit = commit --amend --no-edit
 
 [credential]
-helper = /opt/boxen/bin/boxen-git-credential
 [merge]
 	conflictstyle = diff3
+[credential]
+	helper = osxkeychain
+[github]
+	user = cwoodcox

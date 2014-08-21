@@ -29,9 +29,7 @@ COMPLETION_WAITING_DOTS="true"
 source $ZSH/oh-my-zsh.sh
 source $HOME/.zsh_prompt
 
-source /opt/boxen/env.sh
-
-export PATH=/Users/chuck/.apportable/SDK/bin:$PATH
+export PATH=/usr/local/bin:/usr/local/opt/ruby/bin:/Users/chuck/.apportable/SDK/bin:$PATH
 
 export EDITOR="vim"
 export GIT_EDITOR="vim +1"
@@ -46,4 +44,3 @@ alias reload-shell="source ~/.zshrc"
 export ZSH_LOADED=true
 
 export ANDROID_HOME=/opt/boxen/homebrew/opt/android-sdk
-export SSL_CERT_FILE=$BOXEN_HOME/homebrew/opt/curl-ca-bundle/share/ca-bundle.crt
