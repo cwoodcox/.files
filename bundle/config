@@ -1,3 +1,8 @@
 ---
 BUNDLE_JOBS: '3'
 BUNDLE_BUILD__LIBV8: "--with-system-v8"
+BUNDLE_LOCAL__SPREE: "/Users/chuck/Projects/spree/spree"
+BUNDLE_LOCAL__SPREE_GATEWAY: "/Users/chuck/Projects/spree/spree_gateway"
+BUNDLE_LOCAL__ACTIVEMERCHANT: "/Users/chuck/Projects/Shopify/active_merchant"
+BUNDLE_LOCAL__SPREE_AUTH_DEVISE: "/Users/chuck/Projects/spree/spree_auth_devise"
+BUNDLE_LOCAL__SPREE_BRAINTREE_CSE: "/Users/chuck/Projects/railsdog/spree_braintree_cse"
