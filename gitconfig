@@ -29,6 +29,7 @@ protocol = https
 [credential]
 [merge]
 	conflictstyle = diff3
+	defaultToUpstream = true
 [credential]
 	helper = osxkeychain
 [github]
