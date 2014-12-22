@@ -34,6 +34,8 @@ Bundle 'tpope/vim-unimpaired'
 Bundle 'mattn/webapi-vim'
 Bundle 'mattn/gist-vim'
 
+Bundle 'moll/vim-bbye'
+
 let g:gist_clip_command = 'pbcopy'
 let g:gist_post_private = 1
 let g:gist_show_privates = 1
@@ -109,6 +111,7 @@ map <leader>tf :tabfirst<cr>
 map <leader>tl :tablast<cr>
 map <leader>tm :tabmove
 
+nnoremap <Leader>q :Bdelete<CR>
 " Controversial...swap colon and semicolon for easier commands
 "nnoremap ; :
 "nnoremap : ;
