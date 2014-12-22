@@ -90,6 +90,7 @@ let g:airline#extensions#tmuxline#enabled = 0
 set shellcmdflag=-lc
 
 set nospell
+set autoread
 
 set mouse=a
 " Or use vividchalk
