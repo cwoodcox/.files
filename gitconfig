@@ -22,6 +22,7 @@
 protocol = https
 
 [alias]
+  whereami = show --oneline --no-patch
   history = log --pretty='format:%C(yellow)%h %Creset- %C(white)%s %C(bold blue)[%an]%Creset %Cgreen%cr' --graph
   recommit = commit --amend --no-edit
 
