@@ -1,7 +1,20 @@
 [user]
 	name = Corey Woodcox
-	email = cwoodcox@covermymeds.com
+	email = {{ .email }}
+  {{ if eq .machine "personal" }}
+  signingkey = {{ onepasswordRead "op://Private/v4q6vrsmte6hvku72nnirscrwm/public key" }}
+[gpg]
+  format = ssh
+
+[gpg "ssh"]
+  program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+
+  {{ else }}
 	signingkey = B5586867F24D1E827393A786FE4BCC0C5521E020
+  {{ end }}
+
+[commit]
+  gpgsign = true
 [core]
 	excludesfile = /Users/cwoodcox/.gitignore_global
 [color]
@@ -44,5 +57,5 @@ protocol = https
 [commit]
 	gpgsign = true
 [credential "https://git.innova-partners.com"]
-	helper = 
+	helper =
 	helper = !/usr/local/bin/gh auth git-credential
