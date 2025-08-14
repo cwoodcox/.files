@@ -1,0 +1,4 @@
+{{- $setupTypes := list "personal" "work" -}}
+data:
+  email: {{ promptString "Enter the email address to use" }}
+  machine: {{ promptChoice "What type of setup is this?" $setupTypes }}
