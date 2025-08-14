@@ -1,36 +1,48 @@
 [user]
 	name = Corey Woodcox
-	email = corey.woodcox@gmail.com
+	email = cwoodcox@covermymeds.com
+	signingkey = B5586867F24D1E827393A786FE4BCC0C5521E020
 [core]
-	excludesfile = /opt/boxen/config/git/gitignore
-[difftool "sourcetree"]
-	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-	path = 
-[mergetool "sourcetree"]
-	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
-	trustExitCode = true
+	excludesfile = /Users/cwoodcox/.gitignore_global
 [color]
 	diff = auto
 	status = auto
 	branch = auto
 [rebase]
 	autosquash = true
+	autostash = true
 [push]
 	default = current
 
 [hub]
 protocol = https
+	host = git.innova-partners.com
 
 [alias]
-  whereami = show --oneline --no-patch
+  whereami = --no-pager show --oneline --no-patch
   history = log --pretty='format:%C(yellow)%h %Creset- %C(white)%s %C(bold blue)[%an]%Creset %Cgreen%cr' --graph
   recommit = commit --amend --no-edit
+	yolo = push -f
+	sstatus = status --short
+	icommit = commit -pv
 
-[credential]
 [merge]
-	conflictstyle = diff3
 	defaultToUpstream = true
+	tool = vimdiff
 [credential]
 	helper = osxkeychain
 [github]
 	user = cwoodcox
+[diff]
+	tool = vimdiff
+[filter "lfs"]
+	clean = git-lfs clean %f
+	smudge = git-lfs smudge %f
+	required = true
+[init]
+	defaultBranch = main
+[commit]
+	gpgsign = true
+[credential "https://git.innova-partners.com"]
+	helper = 
+	helper = !/usr/local/bin/gh auth git-credential

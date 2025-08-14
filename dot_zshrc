@@ -11,7 +11,7 @@ ZSH=$HOME/.oh-my-zsh
 # CASE_SENSITIVE="true"
 
 # Comment this out to disable weekly auto-update checks
-DISABLE_AUTO_UPDATE="true"
+# DISABLE_AUTO_UPDATE="true"
 
 # Uncomment following line if you want to disable colors in ls
 # DISABLE_LS_COLORS="true"
@@ -25,22 +25,40 @@ COMPLETION_WAITING_DOTS="true"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # plugins=(autojump brew bundler cloudapp git github gem rails3 rake rvm ssh-agent terminalapp thor osx)
+plugins=(vi-mode)
 
 source $ZSH/oh-my-zsh.sh
 source $HOME/.zsh_prompt
 
-export PATH=/usr/local/bin:/usr/local/opt/ruby/bin:/Users/chuck/.apportable/SDK/bin:$PATH
+# source /usr/local/opt/chruby/share/chruby/chruby.sh
+# source /usr/local/opt/chruby/share/chruby/auto.sh
 
 export EDITOR="vim"
 export GIT_EDITOR="vim +1"
 export GREP_COLOR="01;30"
+export PATH=$PATH:~/.bin
 set -o vi
 
-eval "$(hub alias -s)"
+eval "$(ssh-add -q --apple-use-keychain)"
 
 alias stats="history | awk '{a[\$2]++} END {for(i in a){print a[i] \" \" i}}' | sort -nr | head"
 alias reload-shell="source ~/.zshrc"
 
-export ZSH_LOADED=true
+alias trim="ltrim | rtrim"
+alias ltrim="sed -e 's/^[[:space:]]*//g'"
+alias rtrim="sed -e 's/[[:space:]]*\$//g'"
 
-export ANDROID_HOME=/opt/boxen/homebrew/opt/android-sdk
+alias whatvpn="lsof -i@`ifconfig utun4 | grep 'inet' | ltrim | cut -d' ' -f2`"
+
+function kat () {
+	KAT_IMAGE=${KAT_IMAGE:-registry.cmmint.net/platform/kat:latest}
+	KAT_TIER=${KAT_TIER:-stable}
+	KAT_HERDER=${KAT_HERDER:-kat-herder.kat-stable-host.cmmaz.cloud}
+	[[ ! -f "${HOME}/.kat-update-check" || -n $(find "${HOME}/.kat-update-check" -type f -mtime +48h) ]] && docker pull "$KAT_IMAGE" && touch "${HOME}/.kat-update-check"
+	docker run -it --rm -e "USER=${USER}" -e "KAT_TIER=${KAT_TIER}" -e "KAT_HERDER=${KAT_HERDER}" -v "${HOME}/.kube:/kube" "$KAT_IMAGE" "$@"
+}
+
+test -e /Users/cwoodcox/.iterm2_shell_integration.zsh && source /Users/cwoodcox/.iterm2_shell_integration.zsh || true
+
+export ZSH_LOADED=true
+export PATH="/opt/homebrew/bin:$PATH"
