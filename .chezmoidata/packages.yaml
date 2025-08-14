@@ -1,0 +1,16 @@
+packages:
+  darwin:
+    brews:
+      - azure-cli
+      - docker-completion
+      - gh
+      - git
+      - hashicorp/tap/terraform
+      - pinentry-mac
+      - thefuck
+      - wget
+    casks:
+      - 1password
+      - font-sf-mono-for-powerline
+    taps:
+      - hashicorp/tap
