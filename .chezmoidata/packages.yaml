@@ -11,6 +11,7 @@ packages:
       - wget
     casks:
       - 1password
+      - 1password-cli
       - font-sf-mono-for-powerline
     taps:
       - hashicorp/tap
