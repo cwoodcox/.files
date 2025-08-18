@@ -48,15 +48,9 @@ alias trim="ltrim | rtrim"
 alias ltrim="sed -e 's/^[[:space:]]*//g'"
 alias rtrim="sed -e 's/[[:space:]]*\$//g'"
 
-alias whatvpn="lsof -i@`ifconfig utun4 | grep 'inet' | ltrim | cut -d' ' -f2`"
-
-function kat () {
-	KAT_IMAGE=${KAT_IMAGE:-registry.cmmint.net/platform/kat:latest}
-	KAT_TIER=${KAT_TIER:-stable}
-	KAT_HERDER=${KAT_HERDER:-kat-herder.kat-stable-host.cmmaz.cloud}
-	[[ ! -f "${HOME}/.kat-update-check" || -n $(find "${HOME}/.kat-update-check" -type f -mtime +48h) ]] && docker pull "$KAT_IMAGE" && touch "${HOME}/.kat-update-check"
-	docker run -it --rm -e "USER=${USER}" -e "KAT_TIER=${KAT_TIER}" -e "KAT_HERDER=${KAT_HERDER}" -v "${HOME}/.kube:/kube" "$KAT_IMAGE" "$@"
-}
+{{- if eq .machine "work" }}
+source ~/.zshrc.work
+{{- end }}
 
 test -e /Users/cwoodcox/.iterm2_shell_integration.zsh && source /Users/cwoodcox/.iterm2_shell_integration.zsh || true
 
