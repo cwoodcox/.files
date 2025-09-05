@@ -40,6 +40,7 @@ export PATH=$PATH:~/.bin
 set -o vi
 
 eval "$(ssh-add -q --apple-use-keychain)"
+eval $(thefuck --alias)
 
 alias stats="history | awk '{a[\$2]++} END {for(i in a){print a[i] \" \" i}}' | sort -nr | head"
 alias reload-shell="source ~/.zshrc"
