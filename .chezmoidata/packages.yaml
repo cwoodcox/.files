@@ -6,7 +6,7 @@ packages:
       - gh
       - git
       - hashicorp/tap/terraform
-      - nvim
+      - neovim
       - pinentry-mac
       - thefuck
       - wget
