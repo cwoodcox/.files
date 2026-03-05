@@ -12,6 +12,6 @@ packages:
     casks:
       - 1password
       - 1password-cli
-      - font-sf-mono-for-powerline
+      - font-sf-mono-nerd-font-ligaturized
     taps:
       - hashicorp/tap
