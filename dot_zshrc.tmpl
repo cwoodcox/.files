@@ -42,7 +42,8 @@ source $HOME/.zsh_prompt
 export EDITOR="nvim"
 export GIT_EDITOR="nvim +1"
 export GREP_COLOR="01;30"
-export PATH=$PATH:~/.bin
+export PATH=$PATH:~/.bin:~/.local/bin
+
 set -o vi
 
 eval "$(ssh-add -q --apple-use-keychain)"
