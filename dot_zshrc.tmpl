@@ -35,6 +35,21 @@ plugins=(vi-mode)
 
 source $ZSH/oh-my-zsh.sh
 source $HOME/.zsh_prompt
+source $HOME/
+
+# git worktree cd
+gwcd() {
+  local p
+  p=$(git worktree list --porcelain | awk -v n="$1" '/^worktree/ && $2 ~ n {print $2; exit}') || return
+  [[ -n "$p" ]] && cd "$p"
+}
+
+_gwcd() { # tab-complete gwcd
+  local -a names
+  names=( ${(f)"$(git worktree list --porcelain 2>/dev/null | awk '/^worktree/ {n=$2; sub(/.*\//,"",n); print n}')"} )
+  _describe 'worktree' names
+}
+compdef _gwcd gwcd
 
 # source /usr/local/opt/chruby/share/chruby/chruby.sh
 # source /usr/local/opt/chruby/share/chruby/auto.sh
