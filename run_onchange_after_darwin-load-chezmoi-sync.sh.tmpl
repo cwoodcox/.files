@@ -1,0 +1,9 @@
+{{ if eq .chezmoi.os "darwin" -}}
+#!/usr/bin/env bash
+set -euo pipefail
+# (Re)register the chezmoi-sync LaunchAgent whenever the plist changes.
+# plist hash: {{ include "private_Library/LaunchAgents/me.woodcox.corey.chezmoi-sync.plist.tmpl" | sha256sum }}
+PLIST="$HOME/Library/LaunchAgents/me.woodcox.corey.chezmoi-sync.plist"
+launchctl bootout "gui/$(id -u)/me.woodcox.corey.chezmoi-sync" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null || true
+{{ end -}}

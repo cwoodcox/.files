@@ -1,1 +1,12 @@
 .oh-my-zsh/cache/**
+
+{{- /* Keep machine-scoped Claude content out of the other machine. Name
+       work-only files mckesson-* and personal-only files personal-*. */}}
+{{ if ne .machine "work" }}
+.claude/skills/mckesson-*/**
+.claude/commands/mckesson-*/**
+{{ end }}
+{{ if ne .machine "personal" }}
+.claude/skills/personal-*/**
+.claude/commands/personal-*/**
+{{ end }}

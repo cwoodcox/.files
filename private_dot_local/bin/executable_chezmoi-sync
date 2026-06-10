@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Keep the chezmoi SOURCE repo in sync (fetch + fast-forward only) and notify
+# when changes are ready to apply. This NEVER runs `chezmoi apply` and NEVER
+# does a non-fast-forward merge -- writing to the live machine stays a
+# deliberate manual step, so nothing here can silently clobber local state.
+export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+command -v chezmoi >/dev/null || exit 0
+src="$(chezmoi source-path 2>/dev/null)" || exit 0
+
+# Bound the fetch. ConnectTimeout only covers the TCP connect, not the wait for
+# the 1Password agent to sign -- if you're away and never approve, that signing
+# request blocks forever, and since launchd won't start the next run until this
+# one exits, the sync would silently stall on a wedged ssh process (`|| true`
+# can't catch a hang, only a non-zero exit). So: fail fast on the easy cases,
+# and hard-cap the rest, killing git AND its ssh child (via the process group).
+export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=10"
+export GIT_TERMINAL_PROMPT=0
+( set -m
+  git -C "$src" fetch -q 2>/dev/null &
+  fpid=$!
+  { sleep 20; kill -TERM -"$fpid" 2>/dev/null; sleep 3; kill -KILL -"$fpid" 2>/dev/null; } &
+  wpid=$!
+  wait "$fpid" 2>/dev/null
+  kill "$wpid" 2>/dev/null
+) 2>/dev/null || true
+
+counts="$(git -C "$src" rev-list --left-right --count '@{u}...HEAD' 2>/dev/null || echo '0	0')"
+behind="${counts%%	*}"
+ahead="${counts##*	}"
+
+# Fast-forward only when it is safe: strictly behind (no local commits to
+# diverge) and a clean working tree. Otherwise leave the repo untouched.
+pulled=0
+if [ "${behind:-0}" -gt 0 ] && [ "${ahead:-0}" -eq 0 ] \
+   && [ -z "$(git -C "$src" status --porcelain 2>/dev/null)" ]; then
+  if git -C "$src" merge --ff-only -q '@{u}' 2>/dev/null; then
+    pulled="$behind"
+    behind=0
+  fi
+fi
+
+msgs=()
+[ "$pulled" -gt 0 ] && msgs+=("pulled $pulled commit(s) from remote")
+[ -n "$(chezmoi status 2>/dev/null)" ] && msgs+=("changes ready to apply")
+[ "${behind:-0}" -gt 0 ] && msgs+=("$behind behind remote (diverged -- resolve manually)")
+[ "${ahead:-0}" -gt 0 ] && msgs+=("$ahead commit(s) unpushed")
+
+if [ ${#msgs[@]} -gt 0 ]; then
+  body="$(printf '%s; ' "${msgs[@]}")"; body="${body%; }"
+  osascript -e "display notification \"$body\" with title \"chezmoi sync\" subtitle \"run chezmoi diff && chezmoi apply\""
+fi
