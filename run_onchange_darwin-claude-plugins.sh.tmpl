@@ -1,0 +1,14 @@
+{{- $mps := merge (.claude.marketplaces.shared | default dict) (index .claude.marketplaces .machine | default dict) -}}
+#!/usr/bin/env bash
+set -euo pipefail
+# `enabledPlugins` only declares intent; Claude Code does not auto-fetch on a
+# fresh machine. This registers the marketplaces and installs the plugins
+# declared for this machine in .chezmoidata/claude.yaml.
+# Re-runs whenever that data changes -- data hash: {{ $mps | toJson | sha256sum }}
+command -v claude >/dev/null 2>&1 || exit 0
+{{ range $name, $mp := $mps -}}
+claude plugin marketplace add {{ $mp.repo }} 2>/dev/null || true
+{{ range $plugin := $mp.plugins -}}
+claude plugin install {{ $plugin }}@{{ $name }} 2>/dev/null || true
+{{ end -}}
+{{ end -}}

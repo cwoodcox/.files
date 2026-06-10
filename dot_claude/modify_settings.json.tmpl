@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# chezmoi "modify_" script: receives the current ~/.claude/settings.json on
+# stdin and emits the desired contents on stdout. This lets us ENFORCE a small
+# set of stable preferences while LEAVING volatile keys (model, effortLevel)
+# under Claude Code's control -- so switching models never shows as drift and
+# never gets reverted by `chezmoi apply`.
+
+# Marketplaces for this machine = shared + machine-specific (.chezmoidata/claude.yaml).
+mps='{{ merge (.claude.marketplaces.shared | default dict) (index .claude.marketplaces .machine | default dict) | toJson }}'
+
+# Stable keys chezmoi enforces everywhere. `model`/`effortLevel` are deliberately
+# absent: Claude Code owns them and the merge below preserves whatever is live.
+stable='{
+  "permissions": { "defaultMode": "auto" },
+  "theme": "auto",
+  "editorMode": "normal",
+  "tui": "fullscreen",
+  "verbose": false,
+  "skipAutoPermissionPrompt": true,
+  "useAutoModeDuringPlan": true
+}'
+
+current="$(cat)"
+[ -z "${current//[[:space:]]/}" ] && current='{}'
+
+# Without jq (e.g. a fresh machine before Homebrew has run) pass the file
+# through unchanged; the next apply once jq is installed will manage it.
+command -v jq >/dev/null 2>&1 || { printf '%s' "$current"; exit 0; }
+
+# - `$cur * $stable` deep-merges stable keys over the live file (preserving
+#   model/effortLevel and any other unmanaged keys).
+# - When this machine has marketplaces, `+ { enabledPlugins, extraKnownMarketplaces }`
+#   REPLACES those two keys wholesale from the YAML (so a marketplace whose shape
+#   changed, e.g. directory -> github, doesn't leave stale keys behind).
+# - When it has none, those keys are left exactly as Claude Code has them.
+jq -n --argjson cur "$current" --argjson stable "$stable" --argjson mps "$mps" '
+  ($mps | to_entries) as $e
+  | ($cur * $stable) as $base
+  | if ($e | length) > 0 then
+      $base + {
+        enabledPlugins: (
+          [ $e[] as $m | ($m.value.plugins // [])[] | { ("\(.)@\($m.key)"): true } ]
+          | add // {}
+        ),
+        extraKnownMarketplaces: (
+          $e | map({ key: .key, value: { source: { source: "github", repo: .value.repo } } })
+             | from_entries
+        )
+      }
+    else
+      $base
+    end
+'
