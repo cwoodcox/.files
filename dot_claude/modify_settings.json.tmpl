@@ -35,13 +35,20 @@ current="$(cat)"
 # through unchanged; the next apply once jq is installed will manage it.
 command -v jq >/dev/null 2>&1 || { printf '%s' "$current"; exit 0; }
 
+# GitHub OAuth token from gh CLI, baked in at apply time so all agents and the
+# GitHub MCP server get it without a separate PAT. Empty string if gh is absent.
+github_token=""
+if command -v gh >/dev/null 2>&1; then
+  github_token="$(gh auth token 2>/dev/null || true)"
+fi
+
 # - `$cur * $stable` deep-merges stable keys over the live file (preserving
 #   model/effortLevel and any other unmanaged keys).
 # - When this machine has marketplaces, `+ { enabledPlugins, extraKnownMarketplaces }`
 #   REPLACES those two keys wholesale from the YAML (so a marketplace whose shape
 #   changed, e.g. directory -> github, doesn't leave stale keys behind).
 # - When it has none, those keys are left exactly as Claude Code has them.
-jq -n --argjson cur "$current" --argjson stable "$stable" --argjson mps "$mps" '
+result=$(jq -n --argjson cur "$current" --argjson stable "$stable" --argjson mps "$mps" '
   ($mps | to_entries) as $e
   | ($cur * $stable) as $base
   | if ($e | length) > 0 then
@@ -58,4 +65,18 @@ jq -n --argjson cur "$current" --argjson stable "$stable" --argjson mps "$mps" '
     else
       $base
     end
-'
+')
+
+# Inject the GitHub token into the global env (agents) and wire up the MCP server.
+if [ -n "$github_token" ]; then
+  result=$(printf '%s' "$result" | jq --arg tok "$github_token" '
+    .env.GITHUB_PERSONAL_ACCESS_TOKEN = $tok
+    | .mcpServers.github = {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": $tok }
+      }
+  ')
+fi
+
+printf '%s' "$result"
