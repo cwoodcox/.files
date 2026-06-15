@@ -40,7 +40,6 @@ protocol = https
 	icommit = commit -pv
   resign-commits = rebase --exec 'git commit --amend --no-edit -S'
   wtpath = "!f() { git worktree list --porcelain | awk -v n=\"$1\" '/^worktree/ && $2 ~ n {print $2; exit}'; }; f"
-
 [merge]
 	defaultToUpstream = true
 	tool = vimdiff
