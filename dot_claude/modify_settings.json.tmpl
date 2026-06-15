@@ -67,15 +67,11 @@ result=$(jq -n --argjson cur "$current" --argjson stable "$stable" --argjson mps
     end
 ')
 
-# Inject the GitHub token into the global env (agents) and wire up the MCP server.
+# Inject the GitHub token into the global env so agents and the plugin's MCP
+# server process both have it without a separate PAT.
 if [ -n "$github_token" ]; then
   result=$(printf '%s' "$result" | jq --arg tok "$github_token" '
     .env.GITHUB_PERSONAL_ACCESS_TOKEN = $tok
-    | .mcpServers.github = {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-github"],
-        "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": $tok }
-      }
   ')
 fi
 
