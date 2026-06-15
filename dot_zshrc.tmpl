@@ -59,6 +59,19 @@ export GIT_EDITOR="nvim +1"
 export GREP_COLOR="01;30"
 export PATH=$PATH:~/.bin:~/.local/bin
 
+if [ -n "$NVIM" ]; then
+  export EDITOR='nvr --remote-wait'
+  export VISUAL="$EDITOR"
+  export GIT_EDITOR='nvr -cc split --remote-wait'
+  export PAGER=cat   # nvim's pager-in-pager is misery; defer to plugins for diff viewing
+fi
+
+if _java_home=$(/usr/libexec/java_home -v 21 2>/dev/null); then
+  export JAVA_HOME="$_java_home"
+  export PATH=$JAVA_HOME/bin:$PATH
+  unset _java_home
+fi
+
 set -o vi
 
 eval "$(ssh-add -q --apple-use-keychain)"

@@ -19,7 +19,13 @@ stable='{
   "tui": "fullscreen",
   "verbose": false,
   "skipAutoPermissionPrompt": true,
-  "useAutoModeDuringPlan": true
+  "useAutoModeDuringPlan": true,
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  },
+  "worktree": { "baseRef": "fresh" },
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" }
 }'
 
 current="$(cat)"
