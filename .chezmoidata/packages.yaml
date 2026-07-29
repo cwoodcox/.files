@@ -11,6 +11,7 @@ packages:
       - pinentry-mac
       - rtk
       - thefuck
+      - vjeantet/tap/alerter
       - wget
     casks:
       - 1password
@@ -18,3 +19,4 @@ packages:
       - font-sf-mono-nerd-font-ligaturized
     taps:
       - hashicorp/tap
+      - vjeantet/tap

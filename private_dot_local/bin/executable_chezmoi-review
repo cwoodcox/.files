@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Interactive review + apply for chezmoi, launched from the chezmoi-sync
+# "Update" notification action (or run by hand any time). It runs in a real
+# Terminal, so chezmoi has a normal interactive context and never trips the
+# background "chezmoi would like to access files" TCC prompt.
+#
+# chezmoi-sync records the source files a fast-forward pulled in $pending_file.
+# We map those to target paths and apply ONLY them, so clicking Update applies
+# exactly what came from the other machine -- not unrelated local drift. With a
+# clean source tree that needs no preview (the pulled commits were reviewed
+# where you made them); uncommitted edits get a scoped diff + confirm first.
+#
+# Two escape hatches to a full, always-previewed apply:
+#   - a pulled file with repo-wide effects (.chezmoi* data/config, run_ scripts)
+#     can't be scoped safely, so we review everything; and
+#   - a manual run with no recorded pull.
+set -uo pipefail
+src="$HOME/.local/share/chezmoi"
+pending_file="$HOME/.cache/chezmoi-sync-pending"
+cd "$src" 2>/dev/null || true
+
+# Turn the recorded pull into a list of target paths to scope the apply to.
+scope=()
+broad=0
+if [ -s "$pending_file" ]; then
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    case "$f" in
+      .chezmoi* | */.chezmoi* | run_* | */run_*)
+        broad=1; continue ;;              # repo-wide effect -> can't scope
+    esac
+    t="$(chezmoi target-path "$src/$f" 2>/dev/null || true)"
+    [ -n "$t" ] && scope+=("$t")          # unmapped (e.g. README) -> ignore
+  done < <(sort -u "$pending_file")
+fi
+[ "$broad" -eq 1 ] && scope=()            # fall back to a full apply
+
+apply_and_report() { # $@ = target paths (none = everything)
+  if chezmoi apply "$@"; then echo "✓ applied"; else echo "✗ apply failed"; fi
+  rm -f "$pending_file"
+}
+
+if [ ${#scope[@]} -gt 0 ]; then
+  if [ -z "$(chezmoi status "${scope[@]}" 2>/dev/null)" ]; then
+    echo "Pulled paths already match — nothing to apply."
+    rm -f "$pending_file"
+  elif [ -z "$(git -C "$src" status --porcelain 2>/dev/null)" ]; then
+    echo "Applying ${#scope[@]} pulled path(s) from a clean source…"
+    apply_and_report "${scope[@]}"
+  else
+    echo "Source has uncommitted edits — review the pulled paths first:"
+    echo
+    chezmoi diff "${scope[@]}"
+    printf '\nApply the above? [y/N] '
+    read -r reply
+    case "$reply" in
+      [yY] | [yY][eE][sS]) apply_and_report "${scope[@]}" ;;
+      *) echo "skipped — nothing applied" ;;
+    esac
+  fi
+else
+  if [ -z "$(chezmoi status 2>/dev/null)" ]; then
+    echo "chezmoi: nothing to apply."
+    rm -f "$pending_file"
+  else
+    echo "Reviewing ALL pending changes:"
+    echo
+    chezmoi diff
+    printf '\nApply everything above? [y/N] '
+    read -r reply
+    case "$reply" in
+      [yY] | [yY][eE][sS]) apply_and_report ;;
+      *) echo "skipped — nothing applied" ;;
+    esac
+  fi
+fi
+
+printf '\nPress return to close… '
+read -r _
