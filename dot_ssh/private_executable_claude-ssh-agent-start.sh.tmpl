@@ -1,0 +1,64 @@
+#!/bin/bash
+# Idempotent maintenance for the Claude commit-signing setup: keep the
+# allowed-signers file in step with the key, and make sure a dedicated ssh-agent
+# is running on the Claude socket with that key loaded. Safe to invoke
+# repeatedly -- it runs on every Claude Code SessionStart.
+#
+# This deliberately does NOT create the key. Provisioning belongs to
+# `chezmoi apply` (run_onchange_after_darwin-claude-signing-key.sh), where the
+# new pubkey gets printed and can be registered straight away -- a background
+# session hook quietly minting a fresh signing identity is the kind of surprise
+# worth designing out. If the key is missing, say so on stdout (Claude Code
+# folds SessionStart stdout into the session context) and exit without starting
+# an agent.
+#
+# Why a separate key and agent at all: ~/.gitconfig signs commits with
+# 1Password's op-ssh-sign, which needs 1Password unlocked and prompts for
+# approval. An unattended Claude session can't answer that prompt, so Claude
+# sessions get GIT_CONFIG_GLOBAL=~/.config/git/claude.gitconfig, which signs
+# with this plain on-disk key via ssh-keygen instead. Both are wired up in
+# ~/.claude/settings.json.
+#
+# ssh-add -l exit codes:
+#   0 = agent reachable, has identities (no-op)
+#   1 = agent reachable, no identities (load the key)
+#   2 = agent unreachable (start a new agent, then load the key)
+
+set -uo pipefail
+
+SOCKET="$HOME/.ssh/claude-agent.sock"
+KEY="$HOME/.ssh/claude_signing_ed25519"
+SIGNERS="$HOME/.config/git/claude_allowed_signers"
+EMAIL={{ .email | quote }}
+
+if [ ! -f "$KEY" ]; then
+  printf 'claude-ssh-agent: no commit-signing key at %s\n' "$KEY"
+  printf 'Run `chezmoi apply` to provision one -- commits will not be signed until then.\n'
+  exit 0
+fi
+
+# Keep the allowed-signers file in step with the key, so `git log --show-signature`
+# verifies these commits instead of reporting an unknown signer.
+want="$EMAIL namespaces=\"git\" $(awk '{print $1" "$2}' "$KEY.pub" 2>/dev/null)"
+if [ -f "$KEY.pub" ] \
+   && { [ ! -f "$SIGNERS" ] || [ "$(cat "$SIGNERS" 2>/dev/null)" != "$want" ]; }; then
+  mkdir -p "$(dirname "$SIGNERS")"
+  printf '%s\n' "$want" > "$SIGNERS"
+fi
+
+RC=0
+SSH_AUTH_SOCK="$SOCKET" /usr/bin/ssh-add -l >/dev/null 2>&1 || RC=$?
+
+# Only (re)start the agent if it's actually unreachable (RC=2 or no socket).
+if [ ! -S "$SOCKET" ] || [ "$RC" -eq 2 ]; then
+  rm -f "$SOCKET"
+  /usr/bin/ssh-agent -a "$SOCKET" >/dev/null 2>&1
+  RC=1
+fi
+
+# Load the key only if the agent is empty. Silenced: on the happy path this
+# script must print nothing, or ssh-add's "Identity added" lands in the context
+# of every single session.
+if [ "$RC" -eq 1 ]; then
+  SSH_AUTH_SOCK="$SOCKET" /usr/bin/ssh-add --apple-use-keychain "$KEY" >/dev/null 2>&1
+fi

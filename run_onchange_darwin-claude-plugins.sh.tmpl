@@ -1,27 +1,16 @@
-{{- $shared := .claude.marketplaces.shared | default dict -}}
-{{- $machine := index .claude.marketplaces .machine | default dict -}}
-{{- $mps := dict -}}
-{{- range $name, $mp := $shared -}}
-  {{- $_ := set $mps $name $mp -}}
-{{- end -}}
-{{- range $name, $mp := $machine -}}
-  {{- if hasKey $mps $name -}}
-    {{- $existing := get $mps $name -}}
-    {{- $_ := set $mps $name (dict "repo" $existing.repo "plugins" (concat ($existing.plugins | default (list)) ($mp.plugins | default (list)) | uniq)) -}}
-  {{- else -}}
-    {{- $_ := set $mps $name $mp -}}
-  {{- end -}}
-{{- end -}}
+{{- $mps := includeTemplate "claude-marketplaces" . | fromJson -}}
 #!/usr/bin/env bash
 set -euo pipefail
 # `enabledPlugins` only declares intent; Claude Code does not auto-fetch on a
 # fresh machine. This registers the marketplaces and installs the plugins
-# declared for this machine in .chezmoidata/claude.yaml.
+# declared for this machine in .chezmoidata/claude.yaml. Entries listed under
+# `disabled:` are deliberately NOT installed -- settings.json pins them off, so
+# the marketplace is registered but the plugin stays absent.
 # Re-runs whenever that data changes -- data hash: {{ $mps | toJson | sha256sum }}
 command -v claude >/dev/null 2>&1 || exit 0
 {{ range $name, $mp := $mps -}}
-claude plugin marketplace add {{ $mp.repo }} 2>/dev/null || true
+claude plugin marketplace add {{ $mp.ref | quote }} 2>/dev/null || true
 {{ range $plugin := $mp.plugins -}}
-claude plugin install {{ $plugin }}@{{ $name }} 2>/dev/null || true
+claude plugin install {{ printf "%s@%s" $plugin $name | quote }} 2>/dev/null || true
 {{ end -}}
 {{ end -}}
