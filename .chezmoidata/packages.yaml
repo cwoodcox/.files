@@ -2,6 +2,7 @@ packages:
   darwin:
     brews:
       - azure-cli
+      - ccusage
       - docker-completion
       - gh
       - git
