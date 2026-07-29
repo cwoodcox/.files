@@ -1,3 +1,11 @@
+{{- /* Absolute path to gh, resolved per machine: Homebrew lives at
+       /opt/homebrew on Apple Silicon and /usr/local on Intel, and this file
+       previously hardcoded both, so one machine's credential helper was always
+       broken. Credential helpers need the absolute path because git invoked
+       from a GUI app doesn't necessarily have Homebrew on PATH. Falls back to
+       the Apple Silicon location for a fresh machine where brew hasn't run
+       yet -- which is where brew will put it. */ -}}
+{{- $gh := or (lookPath "gh") "/opt/homebrew/bin/gh" -}}
 [user]
 	name = Corey Woodcox
 	email = {{ .email }}
@@ -16,7 +24,7 @@
 [commit]
   gpgsign = true
 [core]
-	excludesfile = /Users/cwoodcox/.gitignore_global
+	excludesfile = {{ .chezmoi.homeDir }}/.gitignore_global
 [color]
 	diff = auto
 	status = auto
@@ -59,10 +67,10 @@ protocol = https
 	gpgsign = true
 [credential "https://git.innova-partners.com"]
 	helper =
-	helper = !/usr/local/bin/gh auth git-credential
+	helper = !{{ $gh }} auth git-credential
 [credential "https://github.com"]
 	helper =
-	helper = !/opt/homebrew/bin/gh auth git-credential
+	helper = !{{ $gh }} auth git-credential
 [credential "https://gist.github.com"]
 	helper =
-	helper = !/opt/homebrew/bin/gh auth git-credential
+	helper = !{{ $gh }} auth git-credential
