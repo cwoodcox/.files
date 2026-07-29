@@ -21,6 +21,10 @@ SOCKET="$HOME/.ssh/claude-agent.sock"
 KEY="$HOME/.ssh/claude_signing_ed25519"
 SIGNERS="$HOME/.config/git/claude_allowed_signers"
 EMAIL={{ .email | quote }}
+# Dropped next to the key when we mint one, cleared once the pubkey has been
+# reported. A key the remote doesn't know about still signs, but the commits
+# show as Unverified, which is easy to miss -- so this must not fail quietly.
+STAMP="$KEY.unregistered"
 
 # Mint the key on a new machine. Deliberately passphrase-less: it signs local
 # commits unattended and never authenticates to a remote, so there is nothing
@@ -30,6 +34,14 @@ EMAIL={{ .email | quote }}
 if [ ! -f "$KEY" ]; then
   mkdir -p "$(dirname "$KEY")"
   /usr/bin/ssh-keygen -t ed25519 -f "$KEY" -N '' -C "claude-signing-$(hostname -s)" >/dev/null || exit 1
+
+  # Tell someone. Claude Code runs this from SessionStart with stdout and stderr
+  # discarded, so a plain echo would vanish: leave a stamp for the next
+  # `chezmoi apply` to print, and fire a desktop notification right now.
+  : > "$STAMP"
+  /usr/bin/osascript -e 'display notification "New commit-signing key minted. Register it with GitHub so commits verify." with title "Claude signing key"' >/dev/null 2>&1 || true
+  printf 'claude-ssh-agent: minted %s -- register it with GitHub:\n  gh ssh-key add %s --type signing --title %s\n' \
+    "$KEY" "$KEY.pub" "claude-signing-$(hostname -s)" >&2
 fi
 
 # Keep the allowed-signers file in step with the key, so `git log --show-signature`

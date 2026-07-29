@@ -11,18 +11,22 @@ set -euo pipefail
 
 AGENT_START="$HOME/.ssh/claude-ssh-agent-start.sh"
 KEY="$HOME/.ssh/claude_signing_ed25519"
+STAMP="$KEY.unregistered"
 
 [ -x "$AGENT_START" ] || exit 0
-
-had_key=0
-[ -f "$KEY" ] && had_key=1
 
 # Never fail an apply over this; the SessionStart hook retries every session.
 /bin/bash "$AGENT_START" || exit 0
 
-if [ "$had_key" -eq 0 ] && [ -f "$KEY.pub" ]; then
-  printf '\nMinted a Claude commit-signing key for this machine:\n  %s\n' "$(cat "$KEY.pub")"
-  printf 'Commits signed with it verify locally now. To make them verify on the remote:\n'
-  printf '  gh ssh-key add %s --type signing --title %s\n\n' \
-    "$KEY.pub" "claude-signing-$(hostname -s)"
+# Report a key this machine minted but hasn't registered with the remote yet --
+# either just now, or on an earlier SessionStart whose output was discarded.
+if [ -f "$STAMP" ] && [ -f "$KEY.pub" ]; then
+  title="claude-signing-$(hostname -s)"
+  printf '\n  Minted a Claude commit-signing key for this machine:\n\n'
+  printf '    %s\n\n' "$(cat "$KEY.pub")"
+  printf '  It signs and verifies locally already. To have the remote verify it too:\n\n'
+  printf '    gh ssh-key add %s --type signing --title %s\n\n' "$KEY.pub" "$title"
+  printf '  ...or copy it and paste it in by hand at github.com/settings/ssh/new:\n\n'
+  printf '    pbcopy < %s\n\n' "$KEY.pub"
+  rm -f "$STAMP"
 fi
