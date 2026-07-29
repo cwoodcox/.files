@@ -12,6 +12,7 @@ mps='{{ merge (.claude.marketplaces.shared | default dict) (index .claude.market
 
 # Stable keys chezmoi enforces everywhere. `model`/`effortLevel` are deliberately
 # absent: Claude Code owns them and the merge below preserves whatever is live.
+# The PreToolUse hook routes every Bash call through rtk (token-saving proxy).
 stable='{
   "permissions": { "defaultMode": "auto" },
   "theme": "auto",
@@ -25,7 +26,12 @@ stable='{
     "command": "bash ~/.claude/statusline-command.sh"
   },
   "worktree": { "baseRef": "fresh" },
-  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" }
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "rtk hook claude" } ] }
+    ]
+  }
 }'
 
 current="$(cat)"

@@ -9,6 +9,7 @@ packages:
       - jq
       - neovim
       - pinentry-mac
+      - rtk
       - thefuck
       - wget
     casks:
