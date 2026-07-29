@@ -1,4 +1,17 @@
-{{- $mps := merge (.claude.marketplaces.shared | default dict) (index .claude.marketplaces .machine | default dict) -}}
+{{- $shared := .claude.marketplaces.shared | default dict -}}
+{{- $machine := index .claude.marketplaces .machine | default dict -}}
+{{- $mps := dict -}}
+{{- range $name, $mp := $shared -}}
+  {{- $_ := set $mps $name $mp -}}
+{{- end -}}
+{{- range $name, $mp := $machine -}}
+  {{- if hasKey $mps $name -}}
+    {{- $existing := get $mps $name -}}
+    {{- $_ := set $mps $name (dict "repo" $existing.repo "plugins" (concat ($existing.plugins | default (list)) ($mp.plugins | default (list)) | uniq)) -}}
+  {{- else -}}
+    {{- $_ := set $mps $name $mp -}}
+  {{- end -}}
+{{- end -}}
 #!/usr/bin/env bash
 set -euo pipefail
 # `enabledPlugins` only declares intent; Claude Code does not auto-fetch on a

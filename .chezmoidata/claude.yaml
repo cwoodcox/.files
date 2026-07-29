@@ -1,21 +1,26 @@
 claude:
-  # Plugin marketplaces, grouped by machine. Put each marketplace in exactly
-  # ONE of: shared, work, personal (no overlapping names across sections).
-  # The top key is the marketplace NAME (the @suffix in a plugin reference,
-  # e.g. pdk@ai-dev-toolkit). `repo` is the GitHub source; `plugins` lists the
-  # plugin names to enable from it.
+  # Plugin marketplaces, grouped by machine. The top key is the marketplace
+  # NAME (the @suffix in a plugin reference, e.g. pdk@ai-dev-toolkit). `repo`
+  # is the GitHub source; `plugins` lists the plugin names to enable from it.
+  # A marketplace name may appear in both shared and a machine section — the
+  # plugins lists are unioned, so machine-specific plugins are additive.
   marketplaces:
-    shared: {}
-      # claude-plugins-official:
-      #   repo: anthropics/claude-plugins-official
-      #   plugins:
-      #     - commit-commands
+    shared:
+      claude-plugins-official:
+        repo: anthropics/claude-plugins-official
+        plugins:
+          - plugin-dev
     work:
+      claude-plugins-official:
+        repo: anthropics/claude-plugins-official
+        plugins:
+          - azure
       ai-dev-toolkit:
         repo: covermymeds/ai-dev-toolkit
         plugins:
+          - cmm-ohio-onprem-tools
+          - lava-platform
           - pdk
-          - lava-platform-tools
     personal: {}
       # my-mp:
       #   repo: cwoodcox/my-plugins
