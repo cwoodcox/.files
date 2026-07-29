@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Provision the Claude commit-signing key for this machine, then hand off to
-# ~/.ssh/claude-ssh-agent-start.sh (which also runs on every SessionStart) to
-# sync allowed-signers and bring up the agent.
+# Provision the Claude commit-signing key for this machine: mint it, register it
+# with GitHub as a signing key, then hand off to ~/.ssh/claude-ssh-agent-start.sh
+# (which also runs on every SessionStart) to sync allowed-signers and bring up
+# the agent.
 #
 # Minting lives here, and ONLY here, so it happens at a moment someone is
-# watching: a new signing identity has to be registered with the remote or its
-# commits show up as Unverified, so the pubkey is printed below. The session
-# hook only ever warns that the key is missing -- it never creates one.
+# watching -- the session hook only ever warns that the key is missing.
+#
+# Set CLAUDE_SIGNING_NO_REGISTER=1 to mint without touching the GitHub account
+# (useful on a managed machine where keys are provisioned centrally).
 # Re-runs whenever the agent script changes -- hash: {{ include "dot_ssh/private_executable_claude-ssh-agent-start.sh.tmpl" | sha256sum }}
 
 KEY="$HOME/.ssh/claude_signing_ed25519"
 AGENT_START="$HOME/.ssh/claude-ssh-agent-start.sh"
+TITLE="claude-signing-$(hostname -s)"
 
 minted=0
 if [ ! -f "$KEY" ]; then
@@ -21,7 +24,7 @@ if [ ! -f "$KEY" ]; then
   # that the file mode doesn't already cover. Per-machine by design -- the key
   # never leaves the machine that made it, which is why it is generated here
   # rather than stored in the chezmoi repo.
-  /usr/bin/ssh-keygen -t ed25519 -f "$KEY" -N '' -C "claude-signing-$(hostname -s)" >/dev/null
+  /usr/bin/ssh-keygen -t ed25519 -f "$KEY" -N '' -C "$TITLE" >/dev/null
   minted=1
 fi
 
@@ -30,12 +33,45 @@ if [ -x "$AGENT_START" ]; then
   /bin/bash "$AGENT_START" >/dev/null 2>&1 || true
 fi
 
-if [ "$minted" -eq 1 ] && [ -f "$KEY.pub" ]; then
-  printf '\n  Minted a Claude commit-signing key for this machine:\n\n'
-  printf '    %s\n\n' "$(cat "$KEY.pub")"
-  printf '  It signs and verifies locally already. To have the remote verify it too:\n\n'
-  printf '    gh ssh-key add %s --type signing --title %s\n\n' \
-    "$KEY.pub" "claude-signing-$(hostname -s)"
-  printf '  ...or copy it and paste it in by hand at github.com/settings/ssh/new:\n\n'
-  printf '    pbcopy < %s\n\n' "$KEY.pub"
+[ "$minted" -eq 1 ] && [ -f "$KEY.pub" ] || exit 0
+
+printf '\n  Minted a Claude commit-signing key for this machine:\n\n'
+printf '    %s\n\n' "$(cat "$KEY.pub")"
+
+# Register it as a SIGNING key -- a distinct slot from an authentication key
+# (the same pubkey can hold both), and the one that makes commits read Verified
+# rather than Unverified on the remote.
+#
+# Best-effort by design. It needs the admin:public_key OAuth scope, which
+# `gh auth login` does not grant by default, and a managed/enterprise host may
+# refuse outright -- so every failure falls through to instructions instead of
+# breaking the apply.
+err=""
+registered=0
+if [ -n "${CLAUDE_SIGNING_NO_REGISTER:-}" ]; then
+  err="skipped: CLAUDE_SIGNING_NO_REGISTER is set"
+elif ! command -v gh >/dev/null 2>&1; then
+  err="skipped: gh is not installed yet"
+elif err="$(gh ssh-key add "$KEY.pub" --type signing --title "$TITLE" 2>&1)"; then
+  registered=1
 fi
+
+if [ "$registered" -eq 1 ]; then
+  printf '  Registered it with GitHub as a signing key (%s).\n' "$TITLE"
+  printf '  Commits from this machine verify locally and on the remote.\n\n'
+  exit 0
+fi
+
+printf '  It signs and verifies locally already, but the remote will show these\n'
+printf '  commits as Unverified until the key is registered.\n\n'
+printf '  Not registered automatically:\n    %s\n\n' "$err"
+case "$err" in
+  *admin:public_key* | *scope* | *"not accessible"* | *403*)
+    printf '  Looks like a missing OAuth scope. Grant it, then retry:\n\n'
+    printf '    gh auth refresh -h github.com -s admin:public_key\n' ;;
+  *)
+    printf '  Retry with:\n\n' ;;
+esac
+printf '    gh ssh-key add %s --type signing --title %s\n\n' "$KEY.pub" "$TITLE"
+printf '  ...or copy it and paste it in by hand at github.com/settings/ssh/new:\n\n'
+printf '    pbcopy < %s\n\n' "$KEY.pub"
