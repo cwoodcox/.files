@@ -5,6 +5,7 @@
 {{ if ne .machine "work" }}
 .claude/skills/mckesson-*/**
 .claude/commands/mckesson-*/**
+.claude/instructions/mckesson-*
 {{ end }}
 {{ if ne .machine "personal" }}
 .claude/skills/personal-*/**
