@@ -1,32 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Make sure the Claude commit-signing key and its dedicated ssh-agent exist on
-# this machine, so a brand-new checkout is ready before the first Claude session
-# rather than on its first SessionStart.
+# Provision the Claude commit-signing key for this machine, then hand off to
+# ~/.ssh/claude-ssh-agent-start.sh (which also runs on every SessionStart) to
+# sync allowed-signers and bring up the agent.
 #
-# The actual work lives in ~/.ssh/claude-ssh-agent-start.sh (which also runs on
-# every SessionStart) -- this only invokes it at apply time and, if a key was
-# just minted, tells you how to register it.
-# Re-runs whenever that script changes -- hash: {{ include "dot_ssh/private_executable_claude-ssh-agent-start.sh.tmpl" | sha256sum }}
+# Minting lives here, and ONLY here, so it happens at a moment someone is
+# watching: a new signing identity has to be registered with the remote or its
+# commits show up as Unverified, so the pubkey is printed below. The session
+# hook only ever warns that the key is missing -- it never creates one.
+# Re-runs whenever the agent script changes -- hash: {{ include "dot_ssh/private_executable_claude-ssh-agent-start.sh.tmpl" | sha256sum }}
 
-AGENT_START="$HOME/.ssh/claude-ssh-agent-start.sh"
 KEY="$HOME/.ssh/claude_signing_ed25519"
-STAMP="$KEY.unregistered"
+AGENT_START="$HOME/.ssh/claude-ssh-agent-start.sh"
 
-[ -x "$AGENT_START" ] || exit 0
+minted=0
+if [ ! -f "$KEY" ]; then
+  mkdir -p "$(dirname "$KEY")"
+  # Passphrase-less on purpose: it signs local commits unattended and never
+  # authenticates to a remote, so there is nothing for a passphrase to protect
+  # that the file mode doesn't already cover. Per-machine by design -- the key
+  # never leaves the machine that made it, which is why it is generated here
+  # rather than stored in the chezmoi repo.
+  /usr/bin/ssh-keygen -t ed25519 -f "$KEY" -N '' -C "claude-signing-$(hostname -s)" >/dev/null
+  minted=1
+fi
 
-# Never fail an apply over this; the SessionStart hook retries every session.
-/bin/bash "$AGENT_START" || exit 0
+# Never fail an apply over the agent; the SessionStart hook retries every session.
+if [ -x "$AGENT_START" ]; then
+  /bin/bash "$AGENT_START" >/dev/null 2>&1 || true
+fi
 
-# Report a key this machine minted but hasn't registered with the remote yet --
-# either just now, or on an earlier SessionStart whose output was discarded.
-if [ -f "$STAMP" ] && [ -f "$KEY.pub" ]; then
-  title="claude-signing-$(hostname -s)"
+if [ "$minted" -eq 1 ] && [ -f "$KEY.pub" ]; then
   printf '\n  Minted a Claude commit-signing key for this machine:\n\n'
   printf '    %s\n\n' "$(cat "$KEY.pub")"
   printf '  It signs and verifies locally already. To have the remote verify it too:\n\n'
-  printf '    gh ssh-key add %s --type signing --title %s\n\n' "$KEY.pub" "$title"
+  printf '    gh ssh-key add %s --type signing --title %s\n\n' \
+    "$KEY.pub" "claude-signing-$(hostname -s)"
   printf '  ...or copy it and paste it in by hand at github.com/settings/ssh/new:\n\n'
   printf '    pbcopy < %s\n\n' "$KEY.pub"
-  rm -f "$STAMP"
 fi

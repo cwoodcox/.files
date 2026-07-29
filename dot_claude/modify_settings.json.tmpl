@@ -23,7 +23,11 @@ mps='{{ $mps | toJson }}'
 #     Host *, which takes precedence over SSH_AUTH_SOCK.
 #   - GIT_CONFIG_GLOBAL swaps in claude.gitconfig, which signs with that key
 #     instead of 1Password's op-ssh-sign.
-#   - SessionStart ensures that agent is up, minting the key on a new machine.
+#   - SessionStart ensures that agent is up. stdout is deliberately NOT
+#     discarded: the script is silent on the happy path and only speaks up when
+#     the signing key is missing, and SessionStart stdout becomes session
+#     context, so that warning is visible rather than swallowed. stderr is
+#     dropped to keep incidental tool chatter out of every session.
 #   - PreToolUse routes every Bash call through rtk (token-saving proxy).
 stable='{
   "permissions": { "defaultMode": "auto" },
@@ -45,7 +49,7 @@ stable='{
   },
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "/bin/bash {{ $home }}/.ssh/claude-ssh-agent-start.sh >/dev/null 2>&1 || true" } ] }
+      { "hooks": [ { "type": "command", "command": "/bin/bash {{ $home }}/.ssh/claude-ssh-agent-start.sh 2>/dev/null || true" } ] }
     ],
     "PreToolUse": [
       { "matcher": "Bash", "hooks": [ { "type": "command", "command": "rtk hook claude" } ] }
