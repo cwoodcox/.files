@@ -57,7 +57,8 @@ compdef _gwcd gwcd
 export EDITOR="nvim"
 export GIT_EDITOR="nvim +1"
 export GREP_COLOR="01;30"
-export PATH=$PATH:~/.bin:~/.local/bin
+export GOPATH=~/.go
+export PATH=$PATH:`gem env gemdir`/bin:~/.go/bin:~/.bin:~/.local/bin
 
 if [ -n "$NVIM" ]; then
   export EDITOR='nvr --remote-wait'
@@ -74,7 +75,6 @@ fi
 
 set -o vi
 
-eval "$(ssh-add -q --apple-use-keychain)"
 eval $(thefuck --alias)
 
 alias stats="history | awk '{a[\$2]++} END {for(i in a){print a[i] \" \" i}}' | sort -nr | head"
@@ -89,5 +89,8 @@ source ~/.zshrc.work
 {{- end }}
 
 test -e /Users/cwoodcox/.iterm2_shell_integration.zsh && source /Users/cwoodcox/.iterm2_shell_integration.zsh || true
+
+# GitHub MCP server token (sourced from gh CLI auth)
+export GITHUB_PERSONAL_ACCESS_TOKEN=$(gh auth token 2>/dev/null)
 
 export ZSH_LOADED=true
