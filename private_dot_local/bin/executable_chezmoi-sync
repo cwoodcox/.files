@@ -1,22 +1,33 @@
 #!/usr/bin/env bash
 # Keep the chezmoi SOURCE repo in sync (fetch + fast-forward only) and notify
-# when changes are ready to apply. This NEVER runs `chezmoi apply` and NEVER
-# does a non-fast-forward merge -- writing to the live machine stays a
-# deliberate manual step, so nothing here can silently clobber local state.
+# when the remote has moved. This NEVER runs `chezmoi apply` and NEVER does a
+# non-fast-forward merge -- writing to the live machine stays a deliberate
+# manual step, so nothing here can silently clobber local state.
+#
+# This runs unattended from a LaunchAgent, so it must not trigger interactive
+# prompts:
+#   - it fetches over HTTPS, where git's `gh` credential helper supplies the
+#     token silently, instead of the SSH remote (which needs a 1Password
+#     approval on every run via the op-ssh agent); and
+#   - it shells out ONLY to `git`, never to the `chezmoi` binary, which would
+#     trip a macOS "chezmoi would like to access files" TCC prompt.
 export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
-command -v chezmoi >/dev/null || exit 0
-src="$(chezmoi source-path 2>/dev/null)" || exit 0
+src="$HOME/.local/share/chezmoi"
+[ -d "$src/.git" ] || exit 0
+command -v git >/dev/null || exit 0
 
-# Bound the fetch. ConnectTimeout only covers the TCP connect, not the wait for
-# the 1Password agent to sign -- if you're away and never approve, that signing
-# request blocks forever, and since launchd won't start the next run until this
-# one exits, the sync would silently stall on a wedged ssh process (`|| true`
-# can't catch a hang, only a non-zero exit). So: fail fast on the easy cases,
-# and hard-cap the rest, killing git AND its ssh child (via the process group).
-export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=10"
+# Fetch from the dedicated HTTPS remote (created by the sync installer) so git's
+# `gh` credential helper can auth unattended; the SSH `origin` would need a
+# 1Password approval on every run. Nothing to do if it isn't configured.
+git -C "$src" remote get-url origin-https >/dev/null 2>&1 || exit 0
+
+# Bound the fetch: a network stall would otherwise block the next scheduled run
+# (launchd won't start another until this one exits, and `|| true` can't catch
+# a hang, only a non-zero exit). Hard-cap it, killing git and any child via the
+# process group.
 export GIT_TERMINAL_PROMPT=0
 ( set -m
-  git -C "$src" fetch -q 2>/dev/null &
+  git -C "$src" fetch -q origin-https '+refs/heads/*:refs/remotes/origin/*' 2>/dev/null &
   fpid=$!
   { sleep 20; kill -TERM -"$fpid" 2>/dev/null; sleep 3; kill -KILL -"$fpid" 2>/dev/null; } &
   wpid=$!
@@ -41,7 +52,6 @@ fi
 
 msgs=()
 [ "$pulled" -gt 0 ] && msgs+=("pulled $pulled commit(s) from remote")
-[ -n "$(chezmoi status 2>/dev/null)" ] && msgs+=("changes ready to apply")
 [ "${behind:-0}" -gt 0 ] && msgs+=("$behind behind remote (diverged -- resolve manually)")
 [ "${ahead:-0}" -gt 0 ] && msgs+=("$ahead commit(s) unpushed")
 

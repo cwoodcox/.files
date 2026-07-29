@@ -1,6 +1,21 @@
 {{ if eq .chezmoi.os "darwin" -}}
 #!/usr/bin/env bash
 set -euo pipefail
+
+SRC="{{ .chezmoi.sourceDir }}"
+
+# The chezmoi-sync LaunchAgent fetches over HTTPS so git's `gh` credential
+# helper can auth unattended -- the SSH `origin` would pop a 1Password approval
+# on every run. Give it a dedicated read-only HTTPS remote derived once from
+# origin; `origin` itself stays on SSH for interactive push/pull.
+if ! git -C "$SRC" remote get-url origin-https >/dev/null 2>&1; then
+  https_url="$(git -C "$SRC" remote get-url origin 2>/dev/null \
+    | sed -E 's#^git@github\.com:#https://github.com/#')"
+  case "$https_url" in
+    https://*) git -C "$SRC" remote add origin-https "$https_url" ;;
+  esac
+fi
+
 # (Re)register the chezmoi-sync LaunchAgent whenever the plist changes.
 # plist hash: {{ include "private_Library/LaunchAgents/me.woodcox.corey.chezmoi-sync.plist.tmpl" | sha256sum }}
 PLIST="$HOME/Library/LaunchAgents/me.woodcox.corey.chezmoi-sync.plist"
