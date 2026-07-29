@@ -10,4 +10,5 @@
 {{ if ne .machine "personal" }}
 .claude/skills/personal-*/**
 .claude/commands/personal-*/**
+.claude/instructions/personal-*
 {{ end }}

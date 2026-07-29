@@ -1,17 +1,5 @@
-{{- $shared := .claude.marketplaces.shared | default dict -}}
-{{- $machine := index .claude.marketplaces .machine | default dict -}}
-{{- $mps := dict -}}
-{{- range $name, $mp := $shared -}}
-  {{- $_ := set $mps $name $mp -}}
-{{- end -}}
-{{- range $name, $mp := $machine -}}
-  {{- if hasKey $mps $name -}}
-    {{- $existing := get $mps $name -}}
-    {{- $_ := set $mps $name (dict "repo" $existing.repo "plugins" (concat ($existing.plugins | default (list)) ($mp.plugins | default (list)) | uniq)) -}}
-  {{- else -}}
-    {{- $_ := set $mps $name $mp -}}
-  {{- end -}}
-{{- end -}}
+{{- $home := .chezmoi.homeDir -}}
+{{- $mps := includeTemplate "claude-marketplaces" . | fromJson -}}
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -21,13 +9,22 @@ set -euo pipefail
 # under Claude Code's control -- so switching models never shows as drift and
 # never gets reverted by `chezmoi apply`.
 
-# Marketplaces for this machine = shared + machine-specific (.chezmoidata/claude.yaml).
-# Duplicate marketplace names have their plugins lists unioned.
+# Marketplaces for this machine = shared + machine-specific, resolved by the
+# .chezmoitemplates/claude-marketplaces partial from .chezmoidata/claude.yaml.
 mps='{{ $mps | toJson }}'
 
 # Stable keys chezmoi enforces everywhere. `model`/`effortLevel` are deliberately
 # absent: Claude Code owns them and the merge below preserves whatever is live.
-# The PreToolUse hook routes every Bash call through rtk (token-saving proxy).
+#
+# env/hooks notes:
+#   - SSH_AUTH_SOCK points Claude sessions at a dedicated ssh-agent holding only
+#     the Claude signing key, so commit signing never waits on a 1Password
+#     unlock. Real SSH auth is unaffected: ~/.ssh/config sets IdentityAgent for
+#     Host *, which takes precedence over SSH_AUTH_SOCK.
+#   - GIT_CONFIG_GLOBAL swaps in claude.gitconfig, which signs with that key
+#     instead of 1Password's op-ssh-sign.
+#   - SessionStart ensures that agent is up, minting the key on a new machine.
+#   - PreToolUse routes every Bash call through rtk (token-saving proxy).
 stable='{
   "permissions": { "defaultMode": "auto" },
   "theme": "auto",
@@ -41,8 +38,15 @@ stable='{
     "command": "bash ~/.claude/statusline-command.sh"
   },
   "worktree": { "baseRef": "fresh" },
-  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "SSH_AUTH_SOCK": "{{ $home }}/.ssh/claude-agent.sock",
+    "GIT_CONFIG_GLOBAL": "{{ $home }}/.config/git/claude.gitconfig"
+  },
   "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "/bin/bash {{ $home }}/.ssh/claude-ssh-agent-start.sh >/dev/null 2>&1 || true" } ] }
+    ],
     "PreToolUse": [
       { "matcher": "Bash", "hooks": [ { "type": "command", "command": "rtk hook claude" } ] }
     ]
@@ -67,7 +71,10 @@ fi
 #   model/effortLevel and any other unmanaged keys).
 # - When this machine has marketplaces, `+ { enabledPlugins, extraKnownMarketplaces }`
 #   REPLACES those two keys wholesale from the YAML (so a marketplace whose shape
-#   changed, e.g. directory -> github, doesn't leave stale keys behind).
+#   changed, e.g. directory -> github, doesn't leave stale keys behind). Because
+#   it is a wholesale replace, the YAML is the ONLY source of truth for those two
+#   keys: a plugin toggled by hand in the TUI is reverted on the next apply, so
+#   record it in .chezmoidata/claude.yaml to make it stick.
 # - When it has none, those keys are left exactly as Claude Code has them.
 result=$(jq -n --argjson cur "$current" --argjson stable "$stable" --argjson mps "$mps" '
   ($mps | to_entries) as $e
@@ -75,12 +82,16 @@ result=$(jq -n --argjson cur "$current" --argjson stable "$stable" --argjson mps
   | if ($e | length) > 0 then
       $base + {
         enabledPlugins: (
-          [ $e[] as $m | ($m.value.plugins // [])[] | { ("\(.)@\($m.key)"): true } ]
-          | add // {}
+          ( [ $e[] as $m | ($m.value.plugins  // [])[] | { ("\(.)@\($m.key)"): true  } ]
+          + [ $e[] as $m | ($m.value.disabled // [])[] | { ("\(.)@\($m.key)"): false } ]
+          ) | add // {}
         ),
         extraKnownMarketplaces: (
-          $e | map({ key: .key, value: { source: { source: "github", repo: .value.repo } } })
-             | from_entries
+          $e | map({
+            key: .key,
+            value: ( { source: .value.source }
+                     + (if .value.autoUpdate then { autoUpdate: true } else {} end) )
+          }) | from_entries
         )
       }
     else
@@ -96,4 +107,4 @@ if [ -n "$github_token" ]; then
   ')
 fi
 
-printf '%s' "$result"
+printf '%s\n' "$result"

@@ -1,0 +1,28 @@
+# Git config used only when GIT_CONFIG_GLOBAL points here (set in ~/.claude/settings.json).
+# Inherits everything from ~/.gitconfig, then overrides signing + push URL for Claude sessions.
+
+[include]
+  path = {{ .chezmoi.homeDir }}/.gitconfig
+
+[user]
+  signingkey = {{ .chezmoi.homeDir }}/.ssh/claude_signing_ed25519.pub
+
+[gpg]
+  format = ssh
+
+[gpg "ssh"]
+  # Default ssh-keygen-based signer. Explicitly unset 1Password's op-ssh-sign
+  # which the parent config installs; that binary requires 1Password to be unlocked.
+  program = ssh-keygen
+  allowedSignersFile = {{ .chezmoi.homeDir }}/.config/git/claude_allowed_signers
+
+[commit]
+  gpgsign = true
+
+[tag]
+  gpgsign = true
+
+# Claude sessions push over HTTPS with the gh credential helper (configured in
+# ~/.gitconfig) rather than SSH, so they never wait on a 1Password approval.
+[url "https://github.com/"]
+  insteadOf = git@github.com:

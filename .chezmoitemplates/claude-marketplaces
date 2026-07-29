@@ -1,0 +1,67 @@
+{{- /* Resolve this machine's Claude plugin marketplaces from
+       .chezmoidata/claude.yaml and emit them as JSON.
+
+       Shared by dot_claude/modify_settings.json.tmpl (which writes them into
+       settings.json) and run_onchange_darwin-claude-plugins.sh.tmpl (which
+       installs them), so the two can never disagree. Consume with:
+
+         {{ `{{- $mps := includeTemplate "claude-marketplaces" . | fromJson -}}` }}
+
+       Pass 1 merges the `shared` section with the section for .machine into
+       $raw, unioning the `plugins` and `disabled` lists and letting the machine
+       section win on scalar keys (repo / path / autoUpdate).
+
+       Pass 2 reshapes each entry into:
+         source      -> the extraKnownMarketplaces `source` value
+         autoUpdate  -> present only when true
+         ref         -> what `claude plugin marketplace add` takes (repo or path)
+         plugins     -> plugin names to enable  (enabledPlugins -> true)
+         disabled    -> plugin names to pin off (enabledPlugins -> false) */ -}}
+{{- $home := .chezmoi.homeDir -}}
+{{- $shared := .claude.marketplaces.shared | default dict -}}
+{{- $machine := index .claude.marketplaces .machine | default dict -}}
+{{- $raw := dict -}}
+{{- range $section := (list $shared $machine) -}}
+  {{- range $name, $mp := $section -}}
+    {{- $acc := ternary (get $raw $name) dict (hasKey $raw $name) -}}
+    {{- $next := dict -}}
+    {{- range $k, $v := $acc -}}
+      {{- $_ := set $next $k $v -}}
+    {{- end -}}
+    {{- range $k, $v := $mp -}}
+      {{- if or (eq $k "plugins") (eq $k "disabled") -}}
+        {{- $prev := ternary (get $acc $k) (list) (hasKey $acc $k) -}}
+        {{- $_ := set $next $k (concat ($prev | default (list)) ($v | default (list)) | uniq) -}}
+      {{- else -}}
+        {{- $_ := set $next $k $v -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $_ := set $raw $name $next -}}
+  {{- end -}}
+{{- end -}}
+{{- $mps := dict -}}
+{{- range $name, $mp := $raw -}}
+  {{- $src := dict -}}
+  {{- $ref := "" -}}
+  {{- if hasKey $mp "path" -}}
+    {{- $p := get $mp "path" -}}
+    {{- if hasPrefix "~/" $p -}}
+      {{- $p = printf "%s/%s" $home (trimPrefix "~/" $p) -}}
+    {{- end -}}
+    {{- $src = dict "source" "directory" "path" $p -}}
+    {{- $ref = $p -}}
+  {{- else -}}
+    {{- $src = dict "source" "github" "repo" (get $mp "repo") -}}
+    {{- $ref = get $mp "repo" -}}
+  {{- end -}}
+  {{- $entry := dict
+        "source" $src
+        "ref" $ref
+        "plugins"  (ternary (get $mp "plugins")  (list) (hasKey $mp "plugins"))
+        "disabled" (ternary (get $mp "disabled") (list) (hasKey $mp "disabled")) -}}
+  {{- if and (hasKey $mp "autoUpdate") (get $mp "autoUpdate") -}}
+    {{- $_ := set $entry "autoUpdate" true -}}
+  {{- end -}}
+  {{- $_ := set $mps $name $entry -}}
+{{- end -}}
+{{ $mps | toJson }}

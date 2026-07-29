@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Make sure the Claude commit-signing key and its dedicated ssh-agent exist on
+# this machine, so a brand-new checkout is ready before the first Claude session
+# rather than on its first SessionStart.
+#
+# The actual work lives in ~/.ssh/claude-ssh-agent-start.sh (which also runs on
+# every SessionStart) -- this only invokes it at apply time and, if a key was
+# just minted, tells you how to register it.
+# Re-runs whenever that script changes -- hash: {{ include "dot_ssh/private_executable_claude-ssh-agent-start.sh.tmpl" | sha256sum }}
+
+AGENT_START="$HOME/.ssh/claude-ssh-agent-start.sh"
+KEY="$HOME/.ssh/claude_signing_ed25519"
+
+[ -x "$AGENT_START" ] || exit 0
+
+had_key=0
+[ -f "$KEY" ] && had_key=1
+
+# Never fail an apply over this; the SessionStart hook retries every session.
+/bin/bash "$AGENT_START" || exit 0
+
+if [ "$had_key" -eq 0 ] && [ -f "$KEY.pub" ]; then
+  printf '\nMinted a Claude commit-signing key for this machine:\n  %s\n' "$(cat "$KEY.pub")"
+  printf 'Commits signed with it verify locally now. To make them verify on the remote:\n'
+  printf '  gh ssh-key add %s --type signing --title %s\n\n' \
+    "$KEY.pub" "claude-signing-$(hostname -s)"
+fi

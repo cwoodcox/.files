@@ -1,0 +1,58 @@
+#!/bin/bash
+# Idempotent: ensure a dedicated ssh-agent is running on the Claude socket with
+# the Claude signing key loaded, minting that key first on a machine that has
+# none. Safe to invoke repeatedly -- it runs on every Claude Code SessionStart
+# and once per `chezmoi apply` that changes it.
+#
+# Why a separate key and agent: ~/.gitconfig signs commits with 1Password's
+# op-ssh-sign, which needs 1Password unlocked and prompts for approval. An
+# unattended Claude session can't answer that prompt, so Claude sessions get
+# GIT_CONFIG_GLOBAL=~/.config/git/claude.gitconfig, which signs with this plain
+# on-disk key via ssh-keygen instead. Both are wired up in ~/.claude/settings.json.
+#
+# ssh-add -l exit codes:
+#   0 = agent reachable, has identities (no-op)
+#   1 = agent reachable, no identities (load the key)
+#   2 = agent unreachable (start a new agent, then load the key)
+
+set -uo pipefail
+
+SOCKET="$HOME/.ssh/claude-agent.sock"
+KEY="$HOME/.ssh/claude_signing_ed25519"
+SIGNERS="$HOME/.config/git/claude_allowed_signers"
+EMAIL={{ .email | quote }}
+
+# Mint the key on a new machine. Deliberately passphrase-less: it signs local
+# commits unattended and never authenticates to a remote, so there is nothing
+# for a passphrase to protect that the file permissions don't already cover.
+# Per-machine by design -- the key never leaves the machine that made it, which
+# is why it is generated here rather than stored in the chezmoi repo.
+if [ ! -f "$KEY" ]; then
+  mkdir -p "$(dirname "$KEY")"
+  /usr/bin/ssh-keygen -t ed25519 -f "$KEY" -N '' -C "claude-signing-$(hostname -s)" >/dev/null || exit 1
+fi
+
+# Keep the allowed-signers file in step with the key, so `git log --show-signature`
+# verifies these commits instead of reporting an unknown signer.
+if [ -f "$KEY.pub" ]; then
+  want="$EMAIL namespaces=\"git\" $(awk '{print $1" "$2}' "$KEY.pub")"
+  if [ ! -f "$SIGNERS" ] || [ "$(cat "$SIGNERS" 2>/dev/null)" != "$want" ]; then
+    mkdir -p "$(dirname "$SIGNERS")"
+    printf '%s\n' "$want" > "$SIGNERS"
+  fi
+fi
+
+RC=0
+SSH_AUTH_SOCK="$SOCKET" /usr/bin/ssh-add -l >/dev/null 2>&1 || RC=$?
+
+# Only (re)start the agent if it's actually unreachable (RC=2 or no socket).
+if [ ! -S "$SOCKET" ] || [ "$RC" -eq 2 ]; then
+  rm -f "$SOCKET"
+  /usr/bin/ssh-agent -a "$SOCKET" >/dev/null
+  RC=1
+fi
+
+# Load the key only if the agent is empty.
+if [ "$RC" -eq 1 ]; then
+  SSH_AUTH_SOCK="$SOCKET" /usr/bin/ssh-add --apple-use-keychain "$KEY"
+fi

@@ -1,9 +1,21 @@
 claude:
   # Plugin marketplaces, grouped by machine. The top key is the marketplace
-  # NAME (the @suffix in a plugin reference, e.g. pdk@ai-dev-toolkit). `repo`
-  # is the GitHub source; `plugins` lists the plugin names to enable from it.
+  # NAME (the @suffix in a plugin reference, e.g. pdk@ai-dev-toolkit).
+  #
+  # Per marketplace, exactly one source:
+  #   repo:       owner/name of a GitHub marketplace
+  #   path:       local directory marketplace; a leading ~/ expands to $HOME
+  # Optional:
+  #   autoUpdate: true      refresh the marketplace automatically
+  #   plugins:    [names]   enable these  (enabledPlugins -> true)
+  #   disabled:   [names]   pin these off (enabledPlugins -> false)
+  #
+  # A marketplace listed with no plugins/disabled is still registered, so it
+  # stays browsable without anything enabled from it.
+  #
   # A marketplace name may appear in both shared and a machine section — the
-  # plugins lists are unioned, so machine-specific plugins are additive.
+  # plugins and disabled lists are unioned, so machine entries are additive,
+  # and the machine's repo/path/autoUpdate win on conflict.
   marketplaces:
     shared:
       claude-plugins-official:
@@ -21,8 +33,26 @@ claude:
           - cmm-ohio-onprem-tools
           - lava-platform
           - pdk
-    personal: {}
-      # my-mp:
-      #   repo: cwoodcox/my-plugins
-      #   plugins:
-      #     - foo
+    personal:
+      claude-plugins-official:
+        repo: anthropics/claude-plugins-official
+        plugins:
+          - commit-commands
+          - github
+        disabled:
+          - imessage
+      questlog:
+        path: ~/Developer/cwoodcox/questlog
+        plugins:
+          - questlog
+      cloudflare:
+        repo: cloudflare/skills
+        disabled:
+          - cloudflare
+      mcp-apps:
+        repo: modelcontextprotocol/ext-apps
+      bmad-method:
+        repo: bmad-code-org/bmad-method
+        autoUpdate: true
+        disabled:
+          - bmad-method-lifecycle
