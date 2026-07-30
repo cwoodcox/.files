@@ -67,7 +67,7 @@ msgs=()
 body="$(printf '%s; ' "${msgs[@]}")"; body="${body%; }"
 
 # Notify via alerter when available (osascript is the fallback). A fast-forward
-# gets an interactive "Update" button that opens chezmoi-review in Terminal;
+# gets an interactive "Update" button that opens chezmoi-review in iTerm2;
 # everything else (diverged / unpushed) is a plain informational alert. alerter
 # blocks until clicked or the timeout lapses, so both use a bounded --timeout to
 # avoid ever hanging the launchd run.
@@ -75,17 +75,26 @@ if command -v alerter >/dev/null 2>&1; then
   if [ "$pulled" -gt 0 ]; then
     choice="$(alerter --title "chezmoi sync" --subtitle "$body" \
                 --message "Review and apply the pulled changes?" \
-                --actions Update --timeout 60 2>/dev/null)"
+                --actions Update --timeout 60 --sender com.googlecode.iterm2 2>/dev/null)"
     # Match anything containing "Update" so we don't depend on the exact click
     # token; @TIMEOUT / @CLOSED / @CONTENTCLICKED correctly fall through.
     case "$choice" in
       *Update*)
-        osascript -e 'tell application "Terminal" to activate' \
-                  -e 'tell application "Terminal" to do script "~/.local/bin/chezmoi-review"' 2>/dev/null || true
+        # Reuse the running iTerm2: new tab in the current window (new window
+        # only if none is open), rather than always spawning a fresh window.
+        osascript -e 'tell application "iTerm2"' \
+                  -e 'activate' \
+                  -e 'if (count of windows) = 0 then' \
+                  -e 'create window with default profile' \
+                  -e 'else' \
+                  -e 'tell current window to create tab with default profile' \
+                  -e 'end if' \
+                  -e 'tell current session of current window to write text "~/.local/bin/chezmoi-review"' \
+                  -e 'end tell' 2>/dev/null || true
         ;;
     esac
   else
-    alerter --title "chezmoi sync" --message "$body" --timeout 30 >/dev/null 2>&1 || true
+    alerter --title "chezmoi sync" --message "$body" --timeout 30 --sender com.googlecode.iterm2 >/dev/null 2>&1 || true
   fi
 else
   osascript -e "display notification \"$body\" with title \"chezmoi sync\" subtitle \"run chezmoi diff && chezmoi apply\"" 2>/dev/null || true
