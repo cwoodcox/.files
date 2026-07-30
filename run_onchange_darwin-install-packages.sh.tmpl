@@ -1,7 +1,23 @@
 {{ if eq .chezmoi.os "darwin" -}}
 #!/bin/bash
+# Install the packages declared in .chezmoidata/packages.yaml.
+#
+# This never fails the apply, on purpose. The script sorts BEFORE the
+# run_onchange_after_* scripts, so a non-zero exit here aborts chezmoi and the
+# signing-key and chezmoi-sync setup silently never run. One installed-but-
+# unlinked keg was enough to skip both. Package problems are reported loudly and
+# the apply continues.
 
-brew bundle --file=/dev/stdin <<EOF
+command -v brew >/dev/null 2>&1 || {
+  echo "brew not installed yet; skipping package install." >&2
+  exit 0
+}
+
+# tee rather than capture, so a long first-run install still streams progress.
+log=$(mktemp -t chezmoi-brew-bundle) || exit 0
+trap 'rm -f "$log"' EXIT
+
+brew bundle --file=/dev/stdin 2>&1 <<'BREWFILE' | tee "$log"
 {{ range .packages.darwin.brews -}}
 brew {{ . | quote }}
 {{ end -}}
@@ -11,5 +27,25 @@ cask {{ . | quote }}
 {{ range .packages.darwin.taps -}}
 tap {{ . | quote }}
 {{ end -}}
-EOF
+BREWFILE
+status=${PIPESTATUS[0]}
+
+[ "$status" -eq 0 ] && exit 0
+printf '\n  brew bundle exited %s -- continuing the apply anyway.\n' "$status"
+
+# "Installed but unlinked" is the recurring failure mode on these machines: npm's
+# global prefix is ALSO /opt/homebrew, so `npm i -g NAME` claims
+# /opt/homebrew/bin/NAME and brew can never link its own copy. brew bundle then
+# refuses to call the Brewfile satisfied, which used to abort the whole apply.
+unlinked=$(sed -n 's/.*Formula \([^ ][^ ]*\) needs to be linked.*/\1/p' "$log" | sort -u)
+if [ -n "$unlinked" ]; then
+  printf '\n  Installed but unlinked:\n'
+  # shellcheck disable=SC2086  # deliberate word splitting: one formula per line
+  printf '    %s\n' $unlinked
+  printf '\n  An npm global usually owns the symlink (npm prefix: %s).\n' \
+    "$(npm prefix -g 2>/dev/null || echo unknown)"
+  printf '  Inspect:  ls -l %s/bin/NAME\n' "$(brew --prefix)"
+  printf '  Fix:      npm uninstall -g NAME && brew link NAME\n\n'
+fi
+exit 0
 {{ end -}}
