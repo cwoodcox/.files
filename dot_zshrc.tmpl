@@ -61,9 +61,12 @@ export GOPATH=~/.go
 export PATH=$PATH:`gem env gemdir`/bin:~/.go/bin:~/.bin:~/.local/bin
 
 if [ -n "$NVIM" ]; then
-  export EDITOR='nvr --remote-wait'
+  # bufhidden=wipe is load-bearing: --remote-wait blocks until the buffer is
+  # *deleted*, and :wq only closes the window, so without it git hangs forever
+  # waiting on a commit message you already saved.
+  export EDITOR="nvr --remote-wait +'set bufhidden=wipe'"
   export VISUAL="$EDITOR"
-  export GIT_EDITOR='nvr -cc split --remote-wait'
+  export GIT_EDITOR="nvr -cc split --remote-wait +'set bufhidden=wipe'"
   export PAGER=cat   # nvim's pager-in-pager is misery; defer to plugins for diff viewing
 fi
 
