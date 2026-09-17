@@ -3,7 +3,6 @@ packages:
     brews:
       - azure-cli
       - ccusage
-      - docker-completion
       - gh
       - git
       - hashicorp/tap/terraform
