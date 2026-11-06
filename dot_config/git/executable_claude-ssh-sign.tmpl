@@ -1,0 +1,27 @@
+#!/bin/sh
+# gpg.ssh.program for claude.gitconfig: ssh-keygen, pinned to the Claude agent.
+#
+# git signs with `<program> -Y sign -n git -f <signingkey.pub> <file>`, and
+# ssh-keygen finds the private half of that key in whatever agent
+# SSH_AUTH_SOCK names. Claude sessions are meant to get the Claude agent's
+# socket from the env block in ~/.claude/settings.json, but sessions the
+# desktop app starts (its built-in Remote Control included) arrive with the
+# app's own SSH_AUTH_SOCK -- 1Password's agent -- and that one wins, while
+# GIT_CONFIG_GLOBAL from the same block still applies. ssh-keygen then falls
+# back to the passphrase-protected key file and every commit fails with
+# "incorrect passphrase supplied". Pinning the socket here makes signing
+# independent of how the session was started.
+SSH_AUTH_SOCK="{{ .chezmoi.homeDir }}/.ssh/claude-agent.sock"
+export SSH_AUTH_SOCK
+
+# Before signing, make sure the agent is up with the key loaded: the same
+# idempotent script SessionStart runs, a no-op on the happy path. This covers a
+# reboot since the last session, or a session that never ran the hook.
+# Its stdout must not reach git (git reads the signature from ours), and
+# stdin is kept away from it too. Verification (-Y verify, find-principals)
+# doesn't need the agent, so it skips this.
+if [ "${1-}" = "-Y" ] && [ "${2-}" = "sign" ]; then
+  /bin/bash "{{ .chezmoi.homeDir }}/.ssh/claude-ssh-agent-start.sh" </dev/null >/dev/null 2>&1 || true
+fi
+
+exec /usr/bin/ssh-keygen "$@"

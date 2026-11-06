@@ -11,9 +11,11 @@
   format = ssh
 
 [gpg "ssh"]
-  # Default ssh-keygen-based signer. Explicitly unset 1Password's op-ssh-sign
-  # which the parent config installs; that binary requires 1Password to be unlocked.
-  program = ssh-keygen
+  # ssh-keygen, via a wrapper that pins SSH_AUTH_SOCK to the Claude agent (see
+  # the wrapper for why the session's own SSH_AUTH_SOCK can't be trusted).
+  # Replaces 1Password's op-ssh-sign, which the parent config installs and
+  # which requires 1Password to be unlocked.
+  program = {{ .chezmoi.homeDir }}/.config/git/claude-ssh-sign
   allowedSignersFile = {{ .chezmoi.homeDir }}/.config/git/claude_allowed_signers
 
 [commit]
