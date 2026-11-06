@@ -20,7 +20,10 @@ mps='{{ $mps | toJson }}'
 #   - SSH_AUTH_SOCK points Claude sessions at a dedicated ssh-agent holding only
 #     the Claude signing key, so commit signing never waits on a 1Password
 #     unlock. Real SSH auth is unaffected: ~/.ssh/config sets IdentityAgent for
-#     Host *, which takes precedence over SSH_AUTH_SOCK.
+#     Host *, which takes precedence over SSH_AUTH_SOCK. Sessions the desktop
+#     app starts override this SSH_AUTH_SOCK with the app's own (1Password's),
+#     so signing doesn't rely on it: claude.gitconfig's signer, claude-ssh-sign,
+#     pins the socket itself.
 #   - GIT_CONFIG_GLOBAL swaps in claude.gitconfig, which signs with that key
 #     instead of 1Password's op-ssh-sign.
 #   - SessionStart ensures that agent is up. stdout is deliberately NOT
